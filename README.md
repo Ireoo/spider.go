@@ -17,3 +17,13 @@ sudo apt-get install golang-go
 ```bash
 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 ```
+
+## 打包程序
+
+```bash
+// window
+go build -o build/spider.exe spider.go
+
+// macos or linux
+go build -o build/spider spider.go
+```

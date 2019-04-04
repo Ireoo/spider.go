@@ -14,7 +14,7 @@ import (
 )
 
 var URL = flag.String("url", "https://www.hao123.com/", "初始化网址，默认: https://www.hao123.com/")
-var API = flag.String("api", "https://api.qiyi.io/", "API 接口地址，如: https://api.qiyi.io/")
+var API = flag.String("api", "https://api.ireoo.com/", "API 接口地址，如: https://api.ireoo.com/")
 var token = flag.String("token", "7d73c01d-d16d-45a5-878f-708567945502", "API 接口验证信息，如: 7d73c01d-d16d-45a5-878f-708567945502")
 
 type PostData struct {
