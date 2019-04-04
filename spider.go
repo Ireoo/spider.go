@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -87,7 +87,7 @@ func main() {
 
 		data, err := json.Marshal(_data)
 		if err != nil {
-			panic(err)
+			log.Println(err)
 		}
 		// fmt.Println(string(data))
 
@@ -95,15 +95,15 @@ func main() {
 		result, err := Api("intenet/update", data)
 		//fmt.Println(result)
 		if err != nil {
-			fmt.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存失败! 错误代码:", err)
+			log.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存失败! 错误代码:", err)
 		} else {
-			fmt.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存成功!", result)
+			log.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存成功!", result)
 		}
 
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("[", r.ID, "]开始访问: ", r.URL)
+		log.Println("[", r.ID, "]开始访问: ", r.URL)
 	})
 
 	c.Visit(*URL)
@@ -120,14 +120,14 @@ func Api(url string, data []byte) (string, error) {
 	reqest.Header.Add("Authorization", *token)
 
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	//处理返回结果
 	response, _ := client.Do(reqest)
 	defer response.Body.Close()
 	b, err := ioutil.ReadAll(response.Body)
-	//if err != nil {
-	//	log.Println("http.Do failed,[err=%s][url=%s]", err, url)
-	//}
+	if err != nil {
+		log.Println("http.Do failed,[err=%s][url=%s]", err, url)
+	}
 	return string(b), err
 }
