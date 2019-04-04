@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gocolly/colly"
 	"github.com/opesun/goquery"
 )
 
-var URL = flag.String("url", "https://www.hao123.com/", "初始化网址，默认: https://www.hao123.com/")
-var API = flag.String("api", "https://api.ireoo.com/", "API 接口地址，如: https://api.ireoo.com/")
-var token = flag.String("token", "7d73c01d-d16d-45a5-878f-708567945502", "API 接口验证信息，如: 7d73c01d-d16d-45a5-878f-708567945502")
+var URL = flag.String("url", "https://www.hao123.com/", "初始化网址")
+var API = flag.String("api", "https://api.ireoo.com/", "API 接口地址")
+var token = flag.String("token", "b910996b-c82e-4558-80bf-83dcac747bee", "API接口验证信息")
 
 type PostData struct {
 	Where struct {
@@ -68,42 +70,56 @@ func main() {
 		//} else {
 		//	body = string(resp.Body)
 		//}
-		body := string(resp.Body)
 
-		p, _ := goquery.ParseString(body)
-		//fmt.Println(p.Find("title").Text())
+		_type := strings.FieldsFunc(resp.Headers.Get("Content-Type"), func(s rune) bool {
+			if s == ';' {
+				return true
+			}
+			return false
+		})
 
-		// 准备提交的数据
-		_data := &PostData{}
+		if _type[0] == "text/html" {
+			body := string(resp.Body)
 
-		_data.Where.Url = resp.Request.URL.String()
+			p, _ := goquery.ParseString(body)
+			//fmt.Println(p.Find("title").Text())
 
-		_data.Data.Title = p.Find("title").Text()
-		_data.Data.Url = resp.Request.URL.String()
-		_data.Data.Content = p.Html()
-		_data.Data.Timer = time.Now().Unix()
+			log.Println("[", resp.Request.ID, "] 信息获取完毕:", resp.Request.URL, p.Find("title").Text())
 
-		_data.Other.Upsert = true
+			// 准备提交的数据
+			_data := &PostData{}
 
-		data, err := json.Marshal(_data)
-		if err != nil {
-			log.Println(err)
-		}
-		// fmt.Println(string(data))
+			_data.Where.Url = resp.Request.URL.String()
 
-		// 将数据保存到远程服务器
-		result, err := Api("intenet/update", data)
-		//fmt.Println(result)
-		if err != nil {
-			log.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存失败! 错误代码:", err)
+			_data.Data.Title = p.Find("title").Text()
+			_data.Data.Url = resp.Request.URL.String()
+			// _data.Data.Content = body
+			_data.Data.Timer = time.Now().Unix()
+
+			_data.Other.Upsert = true
+
+			data, err := json.Marshal(_data)
+			if err != nil {
+				log.Println(err)
+			}
+			fmt.Println(string(data))
+
+			// 将数据保存到远程服务器
+			result, err := Api("intenet/update", data)
+			//fmt.Println(result)
+			if err != nil {
+				log.Println("[", resp.Request.ID, "] 提交到数据库:", "保存失败! 错误代码:", err)
+			} else {
+				log.Println("[", resp.Request.ID, "] 提交到数据库:", "保存成功!", result)
+			}
 		} else {
-			log.Println("[", resp.Request.ID, "]信息获取完毕:", resp.Request.URL, p.Find("title").Text(), "保存成功!", result)
+			log.Println("[", resp.Request.ID, "] 信息获取完毕:", resp.Request.URL, "不是一个网页地址!")
 		}
 
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		log.Println("[", r.ID, "]开始访问: ", r.URL)
+		log.Println("[", r.ID, "] 开始访问: ", r.URL)
 	})
 
 	c.Visit(*URL)
