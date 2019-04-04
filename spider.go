@@ -140,10 +140,10 @@ func Api(url string, data []byte) (string, error) {
 	}
 	//处理返回结果
 	response, _ := client.Do(reqest)
-	defer response.Body.Close()
 	b, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Println("http.Do failed,[err=%s][url=%s]", err, url)
-	}
+	// if err != nil {
+	// 	log.Println("http.Do failed,[err=%s][url=%s]", err, url)
+	// }
+	defer response.Body.Close()
 	return string(b), err
 }
