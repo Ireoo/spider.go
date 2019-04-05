@@ -46,7 +46,7 @@ func main() {
 		if err == nil {
 			_uri := e.Request.URL.ResolveReference(_url)
 			e.Request.Visit(_uri.String())
-			log.Println("[", e.Request.ID, "]检索到链接:", _uri.String(), e.Text)
+			log.Println("[", e.Request.ID, "] 检索到链接:", _uri.String(), e.Text)
 		}
 	})
 
