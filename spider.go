@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
-	"net/url"
 
 	"github.com/gocolly/colly"
 	"github.com/opesun/goquery"
@@ -42,39 +42,16 @@ func main() {
 
 	// Find and visit all links
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		_url, err := url.Parse(e.Attr("href"))
-		if err == nil {
-			_uri := e.Request.URL.ResolveReference(_url)
-			e.Request.Visit(_uri.String())
-			log.Println("[", e.Request.ID, "] 检索到链接:", _uri.String(), e.Text)
+		href := e.Attr("href")
+		reg := regexp.MustCompile(`^(https?):\/\/([\w\-]+(\.[\w\-]+)*\/)*[\w\-]+(\.[\w\-]+)*\/?(\?([\w\-\.,@?^=%&:\/~\+#]*)+)?`)
+		r := reg.FindAllString(href, -1)
+		if len(r) > 0 {
+			e.Request.Visit(href)
+			log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
 		}
 	})
 
 	c.OnResponse(func(resp *colly.Response) {
-		//fmt.Println(string(resp.Body))
-		//fmt.Println(resp.Request.URL, string(resp.Body), resp.Request.ID)
-		//_type := resp.Headers.Get("Content-Type")
-		//code := strings.FieldsFunc(_type, func(s rune) bool {
-		//	if s == '=' {
-		//		return true
-		//	}
-		//	return false
-		//})
-		//fmt.Println(code)
-
-		//body := ""
-		//if len(code) >= 2 {
-		//	encode := strings.FieldsFunc(code[1], func(s rune) bool {
-		//		if s == ';' {
-		//			return true
-		//		}
-		//		return false
-		//	})
-		//	body = mahonia.NewDecoder(encode[0]).ConvertString(string(resp.Body))
-		//} else {
-		//	body = string(resp.Body)
-		//}
-
 		_type := strings.FieldsFunc(resp.Headers.Get("Content-Type"), func(s rune) bool {
 			if s == ';' {
 				return true
@@ -137,6 +114,7 @@ func Api(url string, data []byte) (string, error) {
 	reqest, err := http.NewRequest("POST", *API+url, body)
 
 	//增加header选项
+	reqest.Header.Set("Content-Type", "application/json")
 	reqest.Header.Add("Authorization", *token)
 
 	if err != nil {
@@ -145,9 +123,9 @@ func Api(url string, data []byte) (string, error) {
 	//处理返回结果
 	response, _ := client.Do(reqest)
 	b, err := ioutil.ReadAll(response.Body)
-	// if err != nil {
-	// 	log.Println("http.Do failed,[err=%s][url=%s]", err, url)
-	// }
+	if err != nil {
+		log.Println("http.Do failed,[err=%s][url=%s]", err, url)
+	}
 	defer response.Body.Close()
 	return string(b), err
 }
