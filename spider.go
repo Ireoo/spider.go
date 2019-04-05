@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"net/url"
 
 	"github.com/gocolly/colly"
 	"github.com/opesun/goquery"
@@ -42,8 +43,12 @@ func main() {
 
 	// Find and visit all links
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		e.Request.Visit(e.Attr("href"))
-		//fmt.Println("[", e.Request.ID, "]检索到链接:", e.Attr("href"), e.Text)
+		_url, err := url.Parse(e.Attr("href"))
+		if err == nil {
+			_uri := e.Request.URL.ResolveReference(_url)
+			e.Request.Visit(_uri.String())
+			fmt.Println("[", e.Request.ID, "]检索到链接:", e.Attr("href"), e.Text)
+		}
 	})
 
 	c.OnResponse(func(resp *colly.Response) {
@@ -93,24 +98,24 @@ func main() {
 
 			_data.Data.Title = p.Find("title").Text()
 			_data.Data.Url = resp.Request.URL.String()
-			// _data.Data.Content = body
+			_data.Data.Content = body
 			_data.Data.Timer = time.Now().Unix()
 
 			_data.Other.Upsert = true
 
 			data, err := json.Marshal(_data)
 			if err != nil {
-				log.Println(err)
+				log.Println("[", resp.Request.ID, "] 格式化数据失败! 错误代码:", err)
 			}
-			fmt.Println(string(data))
+			// fmt.Println(string(data))
 
 			// 将数据保存到远程服务器
 			result, err := Api("intenet/update", data)
 			//fmt.Println(result)
 			if err != nil {
-				log.Println("[", resp.Request.ID, "] 提交到数据库:", "保存失败! 错误代码:", err)
+				log.Println("[", resp.Request.ID, "] 提交到数据库失败! 错误代码:", err)
 			} else {
-				log.Println("[", resp.Request.ID, "] 提交到数据库:", "保存成功!", result)
+				log.Println("[", resp.Request.ID, "] 提交到数据库成功!", result)
 			}
 		} else {
 			log.Println("[", resp.Request.ID, "] 信息获取完毕:", resp.Request.URL, "不是一个网页地址!")
