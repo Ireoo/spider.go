@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -34,7 +35,17 @@ type PostData struct {
 	} `json:"other"`
 }
 
+type NowURL struct {
+	Url    string
+	Number int
+}
+
 func main() {
+	LastURL := NowURL{
+		Url:    "",
+		Number: 0,
+	}
+
 	flag.Parse()
 
 	c := colly.NewCollector()
@@ -46,8 +57,22 @@ func main() {
 		reg := regexp.MustCompile(`^(https?):\/\/([\w\-]+(\.[\w\-]+)*\/)*[\w\-]+(\.[\w\-]+)*\/?(\?([\w\-\.,@?^=%&:\/~\+#]*)+)?`)
 		r := reg.FindAllString(href, -1)
 		if len(r) > 0 {
-			e.Request.Visit(href)
-			log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
+			// 格式化href
+			uri, err := url.Parse(href)
+			if err == nil {
+				if uri.Host == LastURL.Url {
+					LastURL.Number++
+					if LastURL.Number < 11 {
+						e.Request.Visit(href)
+						log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
+					} else {
+						log.Println("[", e.Request.ID, "] 检索到链接:", href, "同一时间重复次数过多,已经丢弃!")
+					}
+				} else {
+					LastURL.Url = uri.Host
+					LastURL.Number = 0
+				}
+			}
 		}
 	})
 
