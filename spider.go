@@ -20,6 +20,7 @@ import (
 var URL = flag.String("url", "https://www.hao123.com/", "初始化网址")
 var API = flag.String("api", "http://localhost/", "API 接口地址")
 var token = flag.String("token", "87451ccc-a7c3-4f2e-94cd-b226e28bb2bb", "API接口验证信息")
+var Queue = flag.Int("q", 50, "线程数量")
 
 type PostData struct {
 	Where struct {
@@ -51,7 +52,7 @@ func main() {
 
 	// create a request queue with 2 consumer threads
 	q, _ := queue.New(
-		50, // Number of consumer threads
+		*Queue, // Number of consumer threads
 		&queue.InMemoryQueueStorage{MaxSize: 10000}, // Use default queue storage
 	)
 
@@ -71,8 +72,12 @@ func main() {
 					LastURL.Number++
 					if LastURL.Number < 11 {
 						// e.Request.Visit(href)
+						r2, err := e.Request.New("GET", href, nil)
+						if err == nil {
+							q.AddRequest(r2)
+						}
 						// q.AddRequest(e.Request)
-						q.AddURL(href)
+						// q.AddURL(href)
 						// log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
 					} else {
 						// log.Println("[", e.Request.ID, "] 检索到链接:", href, "同一时间重复次数过多,已经丢弃!")
