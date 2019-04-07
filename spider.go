@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/queue"
 	"github.com/opesun/goquery"
 )
 
 var URL = flag.String("url", "https://www.hao123.com/", "初始化网址")
-var API = flag.String("api", "https://api.ireoo.com/", "API 接口地址")
-var token = flag.String("token", "b910996b-c82e-4558-80bf-83dcac747bee", "API接口验证信息")
+var API = flag.String("api", "http://localhost/", "API 接口地址")
+var token = flag.String("token", "87451ccc-a7c3-4f2e-94cd-b226e28bb2bb", "API接口验证信息")
 
 type PostData struct {
 	Where struct {
@@ -48,7 +49,13 @@ func main() {
 
 	flag.Parse()
 
-	c := colly.NewCollector()
+	// create a request queue with 2 consumer threads
+	q, _ := queue.New(
+		50, // Number of consumer threads
+		&queue.InMemoryQueueStorage{MaxSize: 10000}, // Use default queue storage
+	)
+
+	c := colly.NewCollector(colly.AllowURLRevisit())
 	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36"
 
 	// Find and visit all links
@@ -63,10 +70,12 @@ func main() {
 				if uri.Host == LastURL.Url {
 					LastURL.Number++
 					if LastURL.Number < 11 {
-						e.Request.Visit(href)
-						log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
+						// e.Request.Visit(href)
+						// q.AddRequest(e.Request)
+						q.AddURL(href)
+						// log.Println("[", e.Request.ID, "] 检索到链接:", href, e.Text)
 					} else {
-						log.Println("[", e.Request.ID, "] 检索到链接:", href, "同一时间重复次数过多,已经丢弃!")
+						// log.Println("[", e.Request.ID, "] 检索到链接:", href, "同一时间重复次数过多,已经丢弃!")
 					}
 				} else {
 					LastURL.Url = uri.Host
@@ -128,7 +137,11 @@ func main() {
 		log.Println("[", r.ID, "] 开始访问: ", r.URL)
 	})
 
-	c.Visit(*URL)
+	// c.Visit(*URL)
+	q.AddURL(*URL)
+
+	q.Run(c)
+
 }
 
 func Api(url string, data []byte) (string, error) {
