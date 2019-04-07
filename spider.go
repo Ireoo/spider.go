@@ -84,7 +84,7 @@ func main() {
 			return false
 		})
 
-		if _type[0] == "text/html" {
+		if len(_type) > 0 && _type[0] == "text/html" {
 			body := string(resp.Body)
 
 			p, _ := goquery.ParseString(body)
@@ -146,11 +146,15 @@ func Api(url string, data []byte) (string, error) {
 		log.Println(err)
 	}
 	//处理返回结果
-	response, _ := client.Do(reqest)
-	b, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Println("http.Do failed,[err=%s][url=%s]", err, url)
+	response, err := client.Do(reqest)
+	if err == nil {
+		b, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			log.Println("http.Do failed,[err=%s][url=%s]", err, url)
+		}
+		defer response.Body.Close()
+		return string(b), err
+	} else {
+		return "", err
 	}
-	defer response.Body.Close()
-	return string(b), err
 }
