@@ -48,6 +48,8 @@ func main() {
 		Number: 0,
 	}
 
+	var urls []string
+
 	flag.Parse()
 
 	// create a request queue with 2 consumer threads
@@ -74,7 +76,16 @@ func main() {
 						// e.Request.Visit(href)
 						r2, err := e.Request.New("GET", href, nil)
 						if err == nil {
-							q.AddRequest(r2)
+							ex := false
+							for i := 0; i < len(urls); i++ {
+								if urls[i] == href {
+									ex = true
+								}
+							}
+							if !ex {
+								urls = append(urls, href)
+								q.AddRequest(r2)
+							}
 						}
 						// q.AddRequest(e.Request)
 						// q.AddURL(href)
